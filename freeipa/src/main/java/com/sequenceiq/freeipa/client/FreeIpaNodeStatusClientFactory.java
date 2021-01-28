@@ -10,23 +10,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.sequenceiq.cloudbreak.client.RpcListener;
+import com.sequenceiq.node.health.client.CdpNodeStatusMonitorClient;
 
 @Component
-public class FreeIpaHealthCheckClientFactory extends FreeIpaClientFactory<FreeIpaHealthCheckClient> {
+public class FreeIpaNodeStatusClientFactory extends FreeIpaClientFactory<CdpNodeStatusMonitorClient> {
 
-    protected static final String DEFAULT_BASE_PATH = "/freeipahealthcheck";
+    protected static final String DEFAULT_BASE_PATH = "/nodestatus";
 
-    @Value("${freeipa.healthcheck.connectionTimeoutMs}")
-    private int connectionTimeoutMillis;
+    @Value("${freeipa.nodestatus.connectionTimeoutMs}")
+    private int connetionTimeoutMillis;
 
-    @Value("${freeipa.healthcheck.readTimeoutMs}")
+    @Value("${freeipa.nodestatus.readTimeoutMs}")
     private int readTimeoutMillis;
 
     @NotNull
     @Override
-    protected FreeIpaHealthCheckClient instantiateClient(Map<String, String>  headers, RpcListener listener, Client restClient,
-            URL freeIpaHealthCheckUrl) {
-        return new FreeIpaHealthCheckClient(restClient, freeIpaHealthCheckUrl, headers, listener);
+    protected CdpNodeStatusMonitorClient instantiateClient(Map headers, RpcListener listener, Client restClient, URL freeIpaHealthCheckUrl) {
+        return new CdpNodeStatusMonitorClient(restClient, freeIpaHealthCheckUrl, headers, listener);
     }
 
     @NotNull
@@ -42,6 +42,6 @@ public class FreeIpaHealthCheckClientFactory extends FreeIpaClientFactory<FreeIp
 
     @Override
     protected int getConnectionTimeoutMillis() {
-        return connectionTimeoutMillis;
+        return connetionTimeoutMillis;
     }
 }
