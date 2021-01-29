@@ -1508,6 +1508,40 @@ public class CloudFormationTemplateBuilderTest {
             .contains("\"ThroughputMode\": \"provisioned\"");
     }
 
+    @Test
+    public void buildTestEfsSetFieldsWithExistingSecurityGroups() {
+        //GIVEN
+        CloudStack cloudStack = initCloudStackWithInstanceProfileAndSecurityGroups(
+                List.of("sg-02fe9cf52ed86b28b", "sg-03610a4f8454e526f", "sg-03617a9585e72f75a", "sg-04ad3ca3786d34436", "sg-071f64ce36f37f14d"));
+        AwsEfsFileSystem awsEfsFileSystem = setupEfsFileSystemValidSet();
+
+        //WHEN
+        modelContext = new ModelContext()
+                .withAuthenticatedContext(authenticatedContext)
+                .withStack(cloudStack)
+                .withExistingVpc(true)
+                .withExistingIGW(true)
+                .withExistingSubnetCidr(singletonList(existingSubnetCidr))
+                .withExistinVpcCidr(List.of(existingSubnetCidr))
+                .mapPublicIpOnLaunch(true)
+                .withEnableInstanceProfile(true)
+                .withInstanceProfileAvailable(true)
+                .withOutboundInternetTraffic(OutboundInternetTraffic.ENABLED)
+                .withTemplate(awsCloudFormationTemplate)
+                .withEnableEfs(true)
+                .withEfsFileSystem(awsEfsFileSystem);
+
+        String templateString = cloudFormationTemplateBuilder.build(modelContext);
+
+        //THEN
+        Assertions.assertThat(templateString)
+                .matches(JsonUtil::isValid, "Invalid JSON: " + templateString)
+                .contains("AWS::EFS::FileSystem")
+                .contains("\"Encrypted\" : \"false\"")
+                .contains("\"PerformanceMode\": \"maxIO\"")
+                .contains("\"ThroughputMode\": \"provisioned\"");
+    }
+
     private AwsEfsFileSystem setupEfsFileSystemNullFields() {
         return new AwsEfsFileSystem(null, true, null, null, null, null,
             null, null, null);
@@ -1556,6 +1590,14 @@ public class CloudFormationTemplateBuilderTest {
         return createDefaultCloudStack(groups, getDefaultCloudStackParameters(), getDefaultCloudStackTags());
     }
 
+    private CloudStack initCloudStackWithInstanceProfileAndSecurityGroups(List<String> existingSecurityGroups) {
+        CloudS3View logView = new CloudS3View(CloudIdentityType.LOG);
+        logView.setInstanceProfile(INSTANCE_PROFILE);
+        List<Group> groups = List.of(createDefaultGroupGatewayGroup(Optional.of(logView)),
+                createDefaultGroupMasterGroupWithExistingSGs(Optional.of(logView), existingSecurityGroups));
+        return createDefaultCloudStack(groups, getDefaultCloudStackParameters(), getDefaultCloudStackTags());
+    }
+
     private AuthenticatedContext authenticatedContext() {
         Location location = Location.location(Region.region("region"), AvailabilityZone.availabilityZone("az"));
         CloudContext cloudContext = new CloudContext(5L, "name", "crn", "platform", "variant",
@@ -1572,6 +1614,11 @@ public class CloudFormationTemplateBuilderTest {
 
     private Group createDefaultGroupMasterGroup(Optional<CloudFileSystemView> cloudFileSystemView) {
         return createDefaultGroup("master", InstanceGroupType.CORE, ROOT_VOLUME_SIZE, getDefaultCloudStackSecurity(), cloudFileSystemView);
+    }
+
+    private Group createDefaultGroupMasterGroupWithExistingSGs(Optional<CloudFileSystemView> cloudFileSystemView, List<String> existingSecurityGroups) {
+        return createDefaultGroup("master", InstanceGroupType.CORE, ROOT_VOLUME_SIZE,
+                getDefaultCloudStackSecurityWithExistingSGs(existingSecurityGroups), cloudFileSystemView);
     }
 
     private Group createDefaultGroupGatewayGroup(Optional<CloudFileSystemView> cloudFileSystemView) {
@@ -1610,6 +1657,10 @@ public class CloudFormationTemplateBuilderTest {
 
     private Security getDefaultCloudStackSecurity() {
         return new Security(getDefaultSecurityRules(), emptyList());
+    }
+
+    private Security getDefaultCloudStackSecurityWithExistingSGs(List<String> existingSecurityGroups) {
+        return new Security(getDefaultSecurityRules(), existingSecurityGroups);
     }
 
     private List<SecurityRule> getDefaultSecurityRules() {
