@@ -408,7 +408,7 @@ class StackV4RequestToStackConverterTest extends AbstractJsonConverterTest<Stack
         given(providerParameterCalculator.get(request)).willReturn(getMappable());
         given(conversionService.convert(any(ClusterV4Request.class), eq(Cluster.class))).willReturn(new Cluster());
         given(telemetryConverter.convert(null, StackType.DATALAKE)).willReturn(new Telemetry());
-        given(loadBalancerConfigService.createLoadBalancers(any(), any())).willReturn(Set.of(loadBalancer));
+        given(loadBalancerConfigService.createLoadBalancers(any(), any(), any())).willReturn(Set.of(loadBalancer));
         // WHEN
         Stack stack = underTest.convert(request);
         // THEN
@@ -428,7 +428,7 @@ class StackV4RequestToStackConverterTest extends AbstractJsonConverterTest<Stack
         given(providerParameterCalculator.get(request)).willReturn(getMappable());
         given(conversionService.convert(any(ClusterV4Request.class), eq(Cluster.class))).willReturn(new Cluster());
         given(telemetryConverter.convert(null, StackType.DATALAKE)).willReturn(new Telemetry());
-        given(loadBalancerConfigService.getKnoxGatewayGroups(any(Stack.class))).willReturn(Set.of("master"));
+        given(loadBalancerConfigService.getKnoxGatewayGroups(any(Stack.class), any())).willReturn(Set.of("master"));
         // WHEN
         Stack stack = underTest.convert(request);
         // THEN
@@ -497,7 +497,7 @@ class StackV4RequestToStackConverterTest extends AbstractJsonConverterTest<Stack
         given(providerParameterCalculator.get(request)).willReturn(getMappable());
         given(conversionService.convert(any(ClusterV4Request.class), eq(Cluster.class))).willReturn(new Cluster());
         given(telemetryConverter.convert(null, StackType.DATALAKE)).willReturn(new Telemetry());
-        given(loadBalancerConfigService.getKnoxGatewayGroups(any(Stack.class))).willReturn(Set.of("master"));
+        given(loadBalancerConfigService.getKnoxGatewayGroups(any(Stack.class), any())).willReturn(Set.of("master"));
 
         return request;
     }

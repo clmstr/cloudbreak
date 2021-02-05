@@ -27,6 +27,7 @@ import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
+import com.sequenceiq.cloudbreak.service.stack.TargetGroupPersistenceService;
 import com.sequenceiq.cloudbreak.util.FileReaderUtils;
 import com.sequenceiq.common.api.type.InstanceGroupType;
 import com.sequenceiq.common.api.type.LoadBalancerType;
@@ -60,6 +61,9 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
     @Mock
     private LoadBalancerPersistenceService loadBalancerPersistenceService;
 
+    @Mock
+    private TargetGroupPersistenceService targetGroupPersistenceService;
+
     @InjectMocks
     private LoadBalancerConfigService underTest;
 
@@ -78,7 +82,7 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
 
-        Set<String> selectedGroups = underTest.getKnoxGatewayGroups(stack);
+        Set<String> selectedGroups = underTest.getKnoxGatewayGroups(stack, Set.of());
         assertEquals(groups, selectedGroups);
     }
 
@@ -96,7 +100,7 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(blueprint.getBlueprintText()).thenReturn("{}");
 
-        Set<String> selectedGroups = underTest.getKnoxGatewayGroups(stack);
+        Set<String> selectedGroups = underTest.getKnoxGatewayGroups(stack, stack.getInstanceGroups());
         assertEquals(groups, selectedGroups);
     }
 
@@ -109,11 +113,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         cluster.setBlueprint(blueprint);
         Stack stack = new Stack();
         stack.setCluster(cluster);
-        stack.setInstanceGroups(Set.of(instanceGroup));
 
         when(blueprint.getBlueprintText()).thenReturn("{}");
 
-        Set<String> selectedGroups = underTest.getKnoxGatewayGroups(stack);
+        Set<String> selectedGroups = underTest.getKnoxGatewayGroups(stack, Set.of());
         assert selectedGroups.isEmpty();
     }
 
@@ -148,9 +151,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
         when(subnetSelector.findSubnetById(any(), anyString())).thenReturn(Optional.of(subnet));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, stack.getInstanceGroups());
             assertEquals(1, loadBalancers.size());
             assertEquals(LoadBalancerType.PRIVATE, loadBalancers.iterator().next().getType());
         });
@@ -165,9 +169,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
         when(subnetSelector.findSubnetById(any(), anyString())).thenReturn(Optional.of(subnet));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, stack.getInstanceGroups());
             assertEquals(1, loadBalancers.size());
             assertEquals(LoadBalancerType.PUBLIC, loadBalancers.iterator().next().getType());
         });
@@ -180,9 +185,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -193,9 +199,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         DetailedEnvironmentResponse environment = createEnvironment(getPrivateCloudSubnet(PRIVATE_ID_1, AZ_1), false);
 
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(false);
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -209,9 +216,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         when(entitlementService.publicEndpointAccessGatewayEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
         when(subnetSelector.findSubnetById(any(), anyString())).thenReturn(Optional.of(subnet));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, stack.getInstanceGroups());
             assertEquals(2, loadBalancers.size());
             assert loadBalancers.stream().anyMatch(l -> LoadBalancerType.PRIVATE.equals(l.getType()));
             assert loadBalancers.stream().anyMatch(l -> LoadBalancerType.PUBLIC.equals(l.getType()));
@@ -227,9 +235,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         when(entitlementService.publicEndpointAccessGatewayEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
         when(subnetSelector.findSubnetById(any(), anyString())).thenReturn(Optional.of(subnet));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, stack.getInstanceGroups());
             assertEquals(2, loadBalancers.size());
             assert loadBalancers.stream().anyMatch(l -> LoadBalancerType.PRIVATE.equals(l.getType()));
             assert loadBalancers.stream().anyMatch(l -> LoadBalancerType.PUBLIC.equals(l.getType()));
@@ -245,9 +254,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         when(entitlementService.publicEndpointAccessGatewayEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
         when(subnetSelector.findSubnetById(any(), anyString())).thenReturn(Optional.of(subnet));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, stack.getInstanceGroups());
             assertEquals(1, loadBalancers.size());
             assertEquals(LoadBalancerType.PUBLIC, loadBalancers.iterator().next().getType());
         });
@@ -258,15 +268,17 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
         Stack stack1 = createStack(StackType.TEMPLATE, PRIVATE_ID_1);
         DetailedEnvironmentResponse environment = createEnvironment(getPrivateCloudSubnet(PRIVATE_ID_1, AZ_1), true);
 
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
+
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack1, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack1, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
 
         Stack stack2 = createStack(StackType.LEGACY, PRIVATE_ID_1);
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack2, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack2, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -275,8 +287,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
     public void testCreateLoadBalancersNullEnvironment() {
         Stack stack = createStack(StackType.DATALAKE, PRIVATE_ID_1);
 
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
+
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, null);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, null, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -289,9 +303,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(entitlementService.publicEndpointAccessGatewayEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -305,9 +320,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -321,9 +337,10 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, Set.of());
             assert loadBalancers.isEmpty();
         });
     }
@@ -336,9 +353,24 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
         when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
         when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
 
         ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
-            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment);
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, Set.of());
+            assert loadBalancers.isEmpty();
+        });
+    }
+
+    @Test
+    public void testCreateLoadBalancerNoEnvironmentNetwork() {
+        Stack stack = createStack(StackType.DATALAKE, null);
+
+        when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
+        when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(targetGroupPersistenceService.findByIntanceGroupId(any())).thenReturn(new HashSet<>());
+
+        ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, null, Set.of());
             assert loadBalancers.isEmpty();
         });
     }

@@ -32,6 +32,7 @@ import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.TargetGroup;
 import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
+import com.sequenceiq.cloudbreak.service.stack.TargetGroupPersistenceService;
 import com.sequenceiq.cloudbreak.template.model.ServiceComponent;
 import com.sequenceiq.common.api.type.InstanceGroupType;
 import com.sequenceiq.common.api.type.LoadBalancerType;
@@ -66,7 +67,10 @@ public class LoadBalancerConfigService {
     @Inject
     private SubnetSelector subnetSelector;
 
-    public Set<String> getKnoxGatewayGroups(Stack stack) {
+    @Inject
+    private TargetGroupPersistenceService targetGroupPersistenceService;
+
+    public Set<String> getKnoxGatewayGroups(Stack stack, Set<InstanceGroup> instanceGroups) {
         LOGGER.debug("Fetching list of instance groups with Knox gateway installed");
         Set<String> groupNames = new HashSet<>();
         Cluster cluster = stack.getCluster();
@@ -78,7 +82,7 @@ public class LoadBalancerConfigService {
 
         if (groupNames.isEmpty()) {
             LOGGER.debug("Knox gateway is not explicitly defined; searching for CM gateway hosts");
-            groupNames = stack.getInstanceGroups().stream()
+            groupNames = instanceGroups.stream()
                 .filter(i -> InstanceGroupType.isGateway(i.getInstanceGroupType()))
                 .map(InstanceGroup::getGroupName)
                 .collect(Collectors.toSet());
@@ -146,13 +150,13 @@ public class LoadBalancerConfigService {
         return loadBalancerOptional;
     }
 
-    public Set<LoadBalancer> createLoadBalancers(Stack stack, DetailedEnvironmentResponse environment) {
+    public Set<LoadBalancer> createLoadBalancers(Stack stack, DetailedEnvironmentResponse environment, Set<InstanceGroup> instanceGroups) {
         LOGGER.info("Setting up load balancers for stack {}", stack.getDisplayName());
         Set<LoadBalancer> loadBalancers = new HashSet<>();
 
         if (isLoadBalancerEnabled(stack.getType(), environment)) {
             LOGGER.debug("Load balancers are enabled for data lake and data hub stacks.");
-            Optional<TargetGroup> knoxTargetGroup = setupKnoxTargetGroup(stack);
+            Optional<TargetGroup> knoxTargetGroup = setupKnoxTargetGroup(stack, instanceGroups);
             if (knoxTargetGroup.isPresent()) {
                 if (isNetworkUsingPrivateSubnet(stack.getNetwork(), environment.getNetwork())) {
                     LOGGER.debug("Found Knox enabled instance groups in stack. Setting up internal Knox load balancer");
@@ -207,7 +211,8 @@ public class LoadBalancerConfigService {
     }
 
     private boolean isLoadBalancerEnabled(StackType type, DetailedEnvironmentResponse environment) {
-        return isLoadBalancerEnabledForDatalake(type, environment) || isLoadBalancerEnabledForDatahub(type, environment);
+        return environment != null &&
+            (isLoadBalancerEnabledForDatalake(type, environment) || isLoadBalancerEnabledForDatahub(type, environment));
     }
 
     private boolean isLoadBalancerEnabledForDatalake(StackType type, DetailedEnvironmentResponse environment) {
@@ -235,10 +240,10 @@ public class LoadBalancerConfigService {
         return result;
     }
 
-    private Optional<TargetGroup> setupKnoxTargetGroup(Stack stack) {
+    private Optional<TargetGroup> setupKnoxTargetGroup(Stack stack, Set<InstanceGroup> instanceGroups) {
         TargetGroup knoxTargetGroup = null;
-        Set<String> knoxGatewayGroupNames = getKnoxGatewayGroups(stack);
-        Set<InstanceGroup> knoxGatewayInstanceGroups = stack.getInstanceGroups().stream()
+        Set<String> knoxGatewayGroupNames = getKnoxGatewayGroups(stack, instanceGroups);
+        Set<InstanceGroup> knoxGatewayInstanceGroups = instanceGroups.stream()
             .filter(ig -> knoxGatewayGroupNames.contains(ig.getGroupName()))
             .collect(Collectors.toSet());
         if (!knoxGatewayInstanceGroups.isEmpty()) {
@@ -247,9 +252,15 @@ public class LoadBalancerConfigService {
             knoxTargetGroup.setType(TargetGroupType.KNOX);
             knoxTargetGroup.setInstanceGroups(knoxGatewayInstanceGroups);
             TargetGroup finalKnoxTargetGroup = knoxTargetGroup;
-            knoxGatewayInstanceGroups.forEach(ig -> ig.addTargetGroup(finalKnoxTargetGroup));
+            knoxGatewayInstanceGroups.forEach(ig -> addTargetToInstanceGroup(ig, finalKnoxTargetGroup));
         }
         return Optional.ofNullable(knoxTargetGroup);
+    }
+
+    private void addTargetToInstanceGroup(InstanceGroup instanceGroup, TargetGroup targetGroup) {
+        Set<TargetGroup> targetGroups = targetGroupPersistenceService.findByIntanceGroupId(instanceGroup.getId());
+        targetGroups.add(targetGroup);
+        instanceGroup.setTargetGroups(targetGroups);
     }
 
     private LoadBalancer createLoadBalancerIfNotExists(Set<LoadBalancer> loadBalancers, LoadBalancerType type, Stack stack) {
