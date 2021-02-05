@@ -125,6 +125,13 @@ public enum ResourceEvent {
     ENVIRONMENT_STARTED("environment.start.success"),
     ENVIRONMENT_START_FAILED("environment.start.failed"),
 
+    ENVIRONMENT_LOAD_BALANCER_ENV_UPDATE_STARTED("environment.loadbalancer.update.env.started"),
+    ENVIRONMENT_LOAD_BALANCER_ENV_UPDATE_FAILED("environment.loadbalancer.update.env.failed"),
+    ENVIRONMENT_LOAD_BALANCER_STACK_UPDATE_STARTED("environment.loadbalancer.update.stack.started"),
+    ENVIRONMENT_LOAD_BALANCER_STACK_UPDATE_FAILED("environment.loadbalancer.update.stack.failed"),
+    ENVIRONMENT_LOAD_BALANCER_UPDATE_FINISHED("environment.loadbalancer.update.success"),
+    ENVIRONMENT_LOAD_BALANCER_UPDATE_FAILED("environment.loadbalancer.update.failed"),
+
     CREDENTIAL_AZURE_INTERACTIVE_CREATED("credential.azure.interactive.created"),
     CREDENTIAL_AZURE_INTERACTIVE_STATUS("credential.azure.interactive.status"),
     CREDENTIAL_AZURE_INTERACTIVE_FAILED("credential.azure.interactive.failed"),
