@@ -31,12 +31,15 @@ public class WorkloadCredentialService {
 
     public void setWorkloadCredential(FreeIpaClient freeIpaClient, String username, WorkloadCredential workloadCredential)
             throws IOException, FreeIpaClientException {
+        // XXX
+        // XXX mfox: does this path need to optimize credential update?
+        // XXX
         LOGGER.debug("Setting workload credentials for user '{}'", username);
         getOperation(username, workloadCredential, freeIpaClient).invoke(freeIpaClient);
     }
 
-    public void setWorkloadCredentials(boolean fmsToFreeipaBatchCallEnabled, FreeIpaClient freeIpaClient, Map<String, WorkloadCredential> workloadCredentials,
-            BiConsumer<String, String> warnings) throws FreeIpaClientException {
+    public void setWorkloadCredentials(boolean fmsToFreeipaBatchCallEnabled, boolean credentialsUpdateOptimizationEnabled, FreeIpaClient freeIpaClient,
+            Map<String, WorkloadCredential> workloadCredentials, BiConsumer<String, String> warnings) throws FreeIpaClientException {
         List<SetWlCredentialOperation> operations = Lists.newArrayList();
         for (Map.Entry<String, WorkloadCredential> entry : workloadCredentials.entrySet()) {
             String username = entry.getKey();

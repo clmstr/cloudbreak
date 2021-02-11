@@ -71,7 +71,10 @@ class WorkloadCredentialServiceTest {
         when(batchPartitionSizeProperties.getByOperation(any())).thenReturn(100);
         doNothing().when(freeIpaClient).callBatch(any(), any(), any(), any());
 
-        underTest.setWorkloadCredentials(true, freeIpaClient, getCredentialMap(), warnings::put);
+        // XXX
+        // XXX mfox: add test for credentialsUpdateOptimization==true case
+        // XXX
+        underTest.setWorkloadCredentials(true, false, freeIpaClient, getCredentialMap(), warnings::put);
 
         verify(freeIpaClient).callBatch(any(), any(), any(), any());
     }
@@ -81,7 +84,10 @@ class WorkloadCredentialServiceTest {
         Multimap<String, String> warnings = ArrayListMultimap.create();
         when(freeIpaClient.invoke(any(), any(), any(), any())).thenReturn(getRpcResponse());
 
-        underTest.setWorkloadCredentials(false, freeIpaClient, getCredentialMap(), warnings::put);
+        // XXX
+        // XXX mfox: add test for credentialsUpdateOptimization==true case
+        // XXX
+        underTest.setWorkloadCredentials(false, false, freeIpaClient, getCredentialMap(), warnings::put);
 
         verify(freeIpaClient, times(4)).invoke(eq("user_mod"), any(), any(), any());
     }
@@ -92,7 +98,10 @@ class WorkloadCredentialServiceTest {
         when(freeIpaClient.invoke(any(), any(), any(), any())).thenThrow(
                 new FreeIpaClientException("error", new JsonRpcClientException(4202, "", null)));
 
-        underTest.setWorkloadCredentials(false, freeIpaClient, getCredentialMap(), warnings::put);
+        // XXX
+        // XXX mfox: add test for credentialsUpdateOptimization==true case
+        // XXX
+        underTest.setWorkloadCredentials(false, false, freeIpaClient, getCredentialMap(), warnings::put);
 
         verify(freeIpaClient, times(4)).invoke(eq("user_mod"), any(), any(), any());
         assertEquals(0, warnings.size());
@@ -104,7 +113,10 @@ class WorkloadCredentialServiceTest {
         when(freeIpaClient.invoke(any(), any(), any(), any())).thenThrow(
                 new FreeIpaClientException("error", new JsonRpcClientException(5000, "", null)));
 
-        underTest.setWorkloadCredentials(false, freeIpaClient, getCredentialMap(), warnings::put);
+        // XXX
+        // XXX mfox: add test for credentialsUpdateOptimization==true case
+        // XXX
+        underTest.setWorkloadCredentials(false, false, freeIpaClient, getCredentialMap(), warnings::put);
 
         verify(freeIpaClient, times(4)).invoke(eq("user_mod"), any(), any(), any());
         assertEquals(4, warnings.size());

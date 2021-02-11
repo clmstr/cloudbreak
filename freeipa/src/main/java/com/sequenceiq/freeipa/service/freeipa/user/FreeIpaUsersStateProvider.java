@@ -28,6 +28,11 @@ public class FreeIpaUsersStateProvider {
         freeIpaClient.userFindAll().stream()
                 .filter(user -> !IPA_PROTECTED_USERS.contains(user.getUid()))
                 .forEach(user -> {
+                    // XXX
+                    // XXX mfox: remove this
+                    // XXX
+                    LOGGER.info("mfox: retrieved User from IPA: {}", user.toString());
+
                     builder.addUser(fromIpaUser(user));
                     if (null != user.getMemberOfGroup()) {
                         user.getMemberOfGroup().stream()
@@ -45,6 +50,9 @@ public class FreeIpaUsersStateProvider {
         return builder.build();
     }
 
+    // XXX
+    // XXX mfox: follow the path that goes through the method, invoked in UserSyncService.getIpaUserState() and elsewhere
+    // XXX
     public UsersState getFilteredFreeIpaState(FreeIpaClient freeIpaClient, Set<String> userNames)
             throws FreeIpaClientException {
         LOGGER.debug("Retrieving users with user names [{}] from FreeIPA", userNames);

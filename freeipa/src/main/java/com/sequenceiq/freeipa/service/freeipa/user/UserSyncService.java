@@ -271,6 +271,9 @@ public class UserSyncService {
                                 stack -> asyncSynchronizeStack(stack, envToUmsStateMap.get(stack.getEnvironmentCrn()), umsEventGenerationIds, fullSync,
                                         operationId, accountId)));
             } else {
+                // XXX
+                // XXX mfox follow this branch and update as necessary
+                // XXX
                 String deletedWorkloadUser = userSyncFilter.getDeletedWorkloadUser().get();
                 statusFutures = stacks.stream()
                         .collect(Collectors.toMap(Stack::getEnvironmentCrn, stack -> asyncSynchronizeStackForDeleteUser(stack, deletedWorkloadUser)));
@@ -340,12 +343,21 @@ public class UserSyncService {
         Multimap<String, String> warnings = ArrayListMultimap.create();
         try {
             FreeIpaClient freeIpaClient = freeIpaClientFactory.getFreeIpaClientForStack(stack);
-            boolean fmsToFreeipaBatchCallEnabled = entitlementService.isFmsToFreeipaBatchCallEnabled(Crn.fromString(environmentCrn).getAccountId());
+            String accountId = Crn.fromString(environmentCrn).getAccountId();
+            boolean fmsToFreeipaBatchCallEnabled = entitlementService.isFmsToFreeipaBatchCallEnabled(accountId);
+            boolean credentialsUpdateOptimizationEnabled = entitlementService.usersyncCredentialsUpdateOptimizationEnabled(accountId);
+
+            // XXX
+            // XXX mfox: remove this
+            // XXX
+            LOGGER.info("mfox: credentials update optimization is{} enabled for account {}", credentialsUpdateOptimizationEnabled ? "" : " not", accountId);
+
             UsersStateDifference usersStateDifferenceBeforeSync = compareUmsAndFreeIpa(umsUsersState, fullSync, freeIpaClient);
-            applyDifference(umsUsersState, environmentCrn, warnings, usersStateDifferenceBeforeSync, freeIpaClient, fmsToFreeipaBatchCallEnabled);
+            applyDifference(umsUsersState, environmentCrn, warnings, usersStateDifferenceBeforeSync, freeIpaClient, fmsToFreeipaBatchCallEnabled,
+                    credentialsUpdateOptimizationEnabled);
 
             retrySyncIfBatchCallHasWarnings(stack, umsUsersState, fullSync, warnings, freeIpaClient,
-                    fmsToFreeipaBatchCallEnabled, usersStateDifferenceBeforeSync);
+                    fmsToFreeipaBatchCallEnabled, credentialsUpdateOptimizationEnabled, usersStateDifferenceBeforeSync);
 
             // TODO For now we only sync cloud ids during full sync. We should eventually allow more granular syncs (actor level and group level sync).
             if (fullSync && entitlementService.cloudIdentityMappingEnabled(stack.getAccountId())) {
@@ -362,7 +374,8 @@ public class UserSyncService {
     }
 
     private void retrySyncIfBatchCallHasWarnings(Stack stack, UmsUsersState umsUsersState, boolean fullSync, Multimap<String, String> warnings,
-            FreeIpaClient freeIpaClient, boolean fmsToFreeipaBatchCallEnabled, UsersStateDifference usersStateDifferenceBeforeSync)
+            FreeIpaClient freeIpaClient, boolean fmsToFreeipaBatchCallEnabled, boolean credentialsUpdateOptimizationEnabled,
+            UsersStateDifference usersStateDifferenceBeforeSync)
             throws FreeIpaClientException, IOException {
         if (fullSync && !warnings.isEmpty() && fmsToFreeipaBatchCallEnabled) {
             UsersStateDifference usersStateDifferenceAfterSync = compareUmsAndFreeIpa(umsUsersState, fullSync, freeIpaClient);
@@ -371,7 +384,7 @@ public class UserSyncService {
                 try {
                     LOGGER.info(String.format("Sync was partially successful for %s, thus we are trying it once again", stack.getResourceCrn()));
                     applyDifference(umsUsersState, stack.getEnvironmentCrn(), retryWarnings, usersStateDifferenceAfterSync,
-                            freeIpaClient, fmsToFreeipaBatchCallEnabled);
+                            freeIpaClient, fmsToFreeipaBatchCallEnabled, credentialsUpdateOptimizationEnabled);
                     warnings.clear();
                 } finally {
                     warnings.putAll(retryWarnings);
@@ -405,7 +418,8 @@ public class UserSyncService {
     }
 
     private void applyDifference(UmsUsersState umsUsersState, String environmentCrn, Multimap<String, String> warnings,
-            UsersStateDifference usersStateDifference, FreeIpaClient freeIpaClient, boolean fmsToFreeipaBatchCallEnabled)
+            UsersStateDifference usersStateDifference, FreeIpaClient freeIpaClient, boolean fmsToFreeipaBatchCallEnabled,
+            boolean credentialsUpdateOptimizationEnabled)
             throws FreeIpaClientException, IOException {
         LOGGER.debug("Starting {} ...", LogEvent.APPLY_DIFFERENCE_TO_IPA);
         applyStateDifferenceToIpa(environmentCrn, freeIpaClient, usersStateDifference, warnings::put, fmsToFreeipaBatchCallEnabled);
@@ -416,7 +430,7 @@ public class UserSyncService {
         } else {
             // Sync credentials for all users and not just diff. At present there is no way to identify that there is a change in password for a user
             LOGGER.debug("Starting {} for {} users ...", LogEvent.SET_WORKLOAD_CREDENTIALS, umsUsersState.getUsersWorkloadCredentialMap().size());
-            workloadCredentialService.setWorkloadCredentials(fmsToFreeipaBatchCallEnabled, freeIpaClient,
+            workloadCredentialService.setWorkloadCredentials(fmsToFreeipaBatchCallEnabled, credentialsUpdateOptimizationEnabled, freeIpaClient,
                     umsUsersState.getUsersWorkloadCredentialMap(), warnings::put);
             LOGGER.debug("Finished {}.", LogEvent.SET_WORKLOAD_CREDENTIALS);
         }
@@ -435,6 +449,10 @@ public class UserSyncService {
             UsersState ipaUserState = getIpaStateForUser(freeIpaClient, deletedWorkloadUser);
             LOGGER.debug("Finished {}, found {} users and {} groups.", LogEvent.RETRIEVE_PARTIAL_IPA_STATE, ipaUserState.getUsers().size(),
                     ipaUserState.getGroups().size());
+
+            // XXX
+            // XXX mfox: does this path need to do credential update optimization?
+            // XXX
 
             if (!ipaUserState.getUsers().isEmpty()) {
                 ImmutableCollection<String> groupsToRemove = ipaUserState.getGroupMembership().get(deletedWorkloadUser);
@@ -485,6 +503,9 @@ public class UserSyncService {
 
         LOGGER.debug("Starting {} for {} users ...", LogEvent.ADD_USERS,
                 stateDifference.getUsersToAdd().size());
+        // XXX
+        // XXX mfox: Can we set credentials (and other attrs we set with user_mod typically) in the IPA user-add call that creates the user?
+        // XXX
         addUsers(fmsToFreeipaBatchCallEnabled, freeIpaClient, stateDifference.getUsersToAdd(), warnings);
         LOGGER.debug("Finished {}.", LogEvent.ADD_USERS);
 
