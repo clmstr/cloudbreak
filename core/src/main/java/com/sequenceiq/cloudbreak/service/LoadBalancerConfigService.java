@@ -146,12 +146,16 @@ public class LoadBalancerConfigService {
         return loadBalancerOptional;
     }
 
-    public Set<LoadBalancer> createLoadBalancers(Stack stack, DetailedEnvironmentResponse environment) {
+    public Set<LoadBalancer> createLoadBalancers(Stack stack, DetailedEnvironmentResponse environment, boolean loadBalancerDefined) {
         LOGGER.info("Setting up load balancers for stack {}", stack.getDisplayName());
         Set<LoadBalancer> loadBalancers = new HashSet<>();
 
-        if (isLoadBalancerEnabled(stack.getType(), environment)) {
-            LOGGER.debug("Load balancers are enabled for data lake and data hub stacks.");
+        if (loadBalancerDefined || isLoadBalancerEnabled(stack.getType(), environment)) {
+            if (!loadBalancerDefined) {
+                LOGGER.debug("Load balancers are enabled for data lake and data hub stacks.");
+            } else {
+                LOGGER.debug("Load balancer is explicitly defined for the stack.");
+            }
             Optional<TargetGroup> knoxTargetGroup = setupKnoxTargetGroup(stack);
             if (knoxTargetGroup.isPresent()) {
                 if (isNetworkUsingPrivateSubnet(stack.getNetwork(), environment.getNetwork())) {

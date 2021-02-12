@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import javax.inject.Inject;
 
+import com.sequenceiq.common.api.type.InstanceGroupType;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +100,29 @@ public class DistroXV1RequestToStackV4RequestConverter {
         request.setTelemetry(getTelemetryRequest(source, environment, sdxClusterResponse));
         request.setGatewayPort(source.getGatewayPort());
         request.setExternalDatabase(getIfNotNull(source.getExternalDatabase(), databaseRequestConverter::convert));
+        request.setEnableLoadBalancer(source.isEnableLoadBalancer());
+        checkMultipleGatewayNodes(source);
         return request;
+    }
+
+    private void checkMultipleGatewayNodes(DistroXV1Request distroXV1Request) {
+        if (distroXV1Request.getInstanceGroups() == null || distroXV1Request.getInstanceGroups().isEmpty()) {
+            return;
+        }
+        distroXV1Request.getInstanceGroups().forEach(ig -> {
+            if (InstanceGroupType.GATEWAY == ig.getType()) {
+                if (distroXV1Request.isEnableLoadBalancer()) {
+                    if (ig.getNodeCount() < 1) {
+                        throw new BadRequestException("Instance group with GATEWAY type must contain at least 1 node!");
+                    }
+                } else {
+                    if (ig.getNodeCount() != 1) {
+                        throw new BadRequestException("Instance group with GATEWAY type must contain 1 node!");
+                    }
+                }
+            }
+        });
+
     }
 
     public StackV4Request convertAsTemplate(DistroXV1Request source) {
@@ -135,6 +158,8 @@ public class DistroXV1RequestToStackV4RequestConverter {
         request.setTimeToLive(source.getTimeToLive());
         request.setTelemetry(getTelemetryRequest(source, environment, sdxClusterResponse));
         request.setExternalDatabase(getIfNotNull(source.getExternalDatabase(), databaseRequestConverter::convert));
+        request.setEnableLoadBalancer(source.isEnableLoadBalancer());
+        checkMultipleGatewayNodes(source);
         return request;
     }
 
@@ -204,6 +229,7 @@ public class DistroXV1RequestToStackV4RequestConverter {
         request.setSdx(getIfNotNull(source.getSharedService(), sdxConverter::getSdx));
         request.setGatewayPort(source.getGatewayPort());
         request.setExternalDatabase(getIfNotNull(source.getExternalDatabase(), databaseRequestConverter::convert));
+        request.setEnableLoadBalancer(source.isEnableLoadBalancer());
         return request;
     }
 

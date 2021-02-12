@@ -1,5 +1,6 @@
 package com.sequenceiq.distrox.v1.distrox.converter;
 
+import static com.sequenceiq.cloudbreak.doc.ModelDescriptions.InstanceGroupModelDescription.INSTANCE_GROUP_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,6 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.RecoveryMode;
+import com.sequenceiq.common.api.type.InstanceGroupType;
+import com.sequenceiq.distrox.api.v1.distrox.model.instancegroup.InstanceGroupV1Request;
+import com.sequenceiq.distrox.api.v1.distrox.model.instancegroup.template.InstanceTemplateV1Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -144,6 +149,64 @@ class DistroXV1RequestToStackV4RequestConverterTest {
 
         assertThat(convert.getExternalDatabase()).isNotNull();
         assertThat(convert.getExternalDatabase().getAvailabilityType()).isEqualTo(DatabaseAvailabilityType.HA);
+    }
+
+    @Test
+    void gatewayIGMustContain1Node() {
+        when(environmentClientService.getByName(anyString())).thenReturn(createAwsEnvironment());
+        when(networkConverter.convertToNetworkV4Request(any())).thenReturn(createAwsNetworkV4Request());
+        when(databaseRequestConverter.convert(any(DistroXDatabaseRequest.class))).thenReturn(createDatabaseRequest());
+
+        Set<InstanceGroupV1Request> instanceGroups1 = prepareInstanceGroupV1Requests(InstanceGroupType.CORE);
+        Set<InstanceGroupV1Request> instanceGroups2 = prepareInstanceGroupV1Requests(InstanceGroupType.GATEWAY);
+
+
+        DistroXV1Request source = new DistroXV1Request();
+        source.setEnvironmentName("envname");
+        DistroXDatabaseRequest databaseRequest = new DistroXDatabaseRequest();
+        databaseRequest.setAvailabilityType(DistroXDatabaseAvailabilityType.HA);
+        source.setExternalDatabase(databaseRequest);
+        source.setInstanceGroups(instanceGroups1);
+        source.setEnableLoadBalancer(true);
+        underTest.convertAsTemplate(source);
+
+        instanceGroups2.stream().findFirst().ifPresent(instanceGroup -> instanceGroup.setNodeCount(2));
+        source.setInstanceGroups(instanceGroups2);
+
+        underTest.convertAsTemplate(source);
+
+        instanceGroups2.stream().findFirst().ifPresent(instanceGroup -> instanceGroup.setNodeCount(0));
+
+        BadRequestException exception = Assertions.assertThrows(BadRequestException.class, () -> underTest.convertAsTemplate(source));
+        assertEquals("Instance group with GATEWAY type must contain at least 1 node!", exception.getMessage());
+
+        instanceGroups2.stream().findFirst().ifPresent(instanceGroup -> instanceGroup.setNodeCount(2));
+        source.setEnableLoadBalancer(false);
+
+        exception = Assertions.assertThrows(BadRequestException.class, () -> underTest.convertAsTemplate(source));
+        assertEquals("Instance group with GATEWAY type must contain 1 node!", exception.getMessage());
+
+        instanceGroups2.stream().findFirst().ifPresent(instanceGroup -> instanceGroup.setNodeCount(0));
+
+        exception = Assertions.assertThrows(BadRequestException.class, () -> underTest.convertAsTemplate(source));
+        assertEquals("Instance group with GATEWAY type must contain 1 node!", exception.getMessage());
+
+        instanceGroups2.stream().findFirst().ifPresent(instanceGroup -> instanceGroup.setNodeCount(1));
+        underTest.convertAsTemplate(source);
+    }
+
+    private Set<InstanceGroupV1Request> prepareInstanceGroupV1Requests(InstanceGroupType instanceGroupType) {
+        InstanceGroupV1Request instanceGroup = new InstanceGroupV1Request();
+        instanceGroup.setName(INSTANCE_GROUP_NAME);
+        if (InstanceGroupType.GATEWAY.equals(instanceGroupType)) {
+            instanceGroup.setNodeCount(1);
+        } else {
+            instanceGroup.setNodeCount(5);
+        }
+        instanceGroup.setRecoveryMode(RecoveryMode.AUTO);
+        instanceGroup.setTemplate(new InstanceTemplateV1Request());
+        instanceGroup.setType(instanceGroupType);
+        return Set.of(instanceGroup);
     }
 
     @ParameterizedTest
