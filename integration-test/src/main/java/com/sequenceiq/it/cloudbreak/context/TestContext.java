@@ -810,7 +810,7 @@ public abstract class TestContext implements ApplicationContextAware {
 
     public <U extends MicroserviceClient> U getAdminMicroserviceClient(Class<? extends CloudbreakTestDto> testDtoClass, String accountId) {
         String accessKey;
-        if (Optional.ofNullable(cloudbreakActor.isInitialized()).orElse(false)) {
+        if (cloudbreakActor.isInitialized() && cloudbreakActor.getUseUmsStore()) {
             accessKey = cloudbreakActor.getAdminByAccountId(accountId).getAccessKey();
             if (clients.get(accessKey) == null || clients.get(accessKey).isEmpty()) {
                 initMicroserviceClientsForUMSAccountAdmin(cloudbreakActor.getAdminByAccountId(accountId));
@@ -1106,7 +1106,8 @@ public abstract class TestContext implements ApplicationContextAware {
         List<CloudbreakTestDto> orderedTestDtos = testDtos.stream().sorted(new CompareByOrder()).collect(Collectors.toList());
         for (CloudbreakTestDto testDto : orderedTestDtos) {
             try {
-                testDto.cleanUp(this, getAdminMicroserviceClient(testDto.getClass(), Crn.fromString(testDto.getCrn()).getAccountId()));
+                testDto.cleanUp(this, getAdminMicroserviceClient(testDto.getClass(), Objects.requireNonNull(Crn.fromString(testDto.getCrn())).
+                        getAccountId()));
             } catch (Exception e) {
                 LOGGER.info("Cleaning up of tests context with {} resource is failing, because of: {}", testDto.getName(), e.getMessage());
             }

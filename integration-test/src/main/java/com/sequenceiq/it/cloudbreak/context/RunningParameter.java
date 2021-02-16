@@ -42,7 +42,7 @@ public class RunningParameter {
     public CloudbreakUser getWho() {
         if (doAsAdmin) {
             try {
-                if (cloudbreakActor.isInitialized()) {
+                if (cloudbreakActor.isInitialized() && cloudbreakActor.getUseUmsStore()) {
                     return cloudbreakActor.useRealUmsUser(AuthUserKeys.ACCOUNT_ADMIN);
                 }
             } catch (Exception ignored) {

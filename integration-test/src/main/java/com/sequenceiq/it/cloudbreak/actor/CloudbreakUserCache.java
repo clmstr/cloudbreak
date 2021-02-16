@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.testng.annotations.Optional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.sequenceiq.cloudbreak.auth.altus.Crn;
@@ -38,6 +39,8 @@ public class CloudbreakUserCache {
 
     @Value("${integrationtest.ums.deploymentKey:}")
     private String realUmsUserDeployment;
+
+    private boolean useUmsStore;
 
     @PostConstruct
     private void initRealUmsUserCache() {
@@ -89,30 +92,49 @@ public class CloudbreakUserCache {
         if (MapUtils.isEmpty(usersByAccount)) {
             initRealUmsUserCache();
         }
-        CloudbreakUser user = usersByAccount.values().stream().flatMap(Collection::stream)
-                .filter(u -> u.getDisplayName().equals(name)).findFirst()
-                .orElseThrow(() -> new TestFailException(String.format("There is no real UMS user with::%n name: %s%n deployment::account: %s::%s", name,
-                        realUmsUserDeployment, realUmsUserAccount)));
-        LOGGER.info(" Real UMS user has been found:: \nDisplay name: {} \nCrn: {} \nAccess key: {} \nSecret key: {} \nAdmin: {} ",
-                user.getDisplayName(), user.getCrn(), user.getAccessKey(), user.getSecretKey(), user.getAdmin());
-        return user;
+        if (MapUtils.isNotEmpty(usersByAccount)) {
+            CloudbreakUser user = usersByAccount.values().stream().flatMap(Collection::stream)
+                    .filter(u -> u.getDisplayName().equals(name)).findFirst()
+                    .orElseThrow(() -> new TestFailException(String.format("There is no real UMS user with::%n name: %s%n deployment::account: %s::%s", name,
+                            realUmsUserDeployment, realUmsUserAccount)));
+            LOGGER.info(" Real UMS user has been found:: \nDisplay name: {} \nCrn: {} \nAccess key: {} \nSecret key: {} \nAdmin: {} ",
+                    user.getDisplayName(), user.getCrn(), user.getAccessKey(), user.getSecretKey(), user.getAdmin());
+            return user;
+        } else {
+            throw new TestFailException("UMS user store 'ums-users/api-credentials.json' is not available." +
+                    " So initialization of real UMS user cache is not possible!");
+        }
     }
 
     public CloudbreakUser getAdminByAccountId(String accountId) {
-        LOGGER.info("Getting the requested real UMS admin by account Id: {}", accountId);
-        try {
-            CloudbreakUser adminUser = usersByAccount.values().stream().flatMap(Collection::stream)
-                    .filter(CloudbreakUser::getAdmin).findFirst()
-                    .orElseThrow(() -> new TestFailException(String.format("There is no real UMS admin in account: %s", accountId)));
-            LOGGER.info(" Real UMS account admin has been found:: \nDisplay name: {} \nCrn: {} \nAccess key: {} \nSecret key: {} \nAdmin: {} ",
-                    adminUser.getDisplayName(), adminUser.getCrn(), adminUser.getAccessKey(), adminUser.getSecretKey(), adminUser.getAdmin());
-            return adminUser;
-        } catch (Exception e) {
-            throw new TestFailException(String.format("Cannot get the real UMS admin in account: %s, because of: %s", accountId, e.getMessage()), e);
+        if (!usersByAccount.containsKey(accountId)) {
+            throw new TestFailException("Account mismatch:: Real UMS '" + accountId + "' account ID is not present! Please make sure: " +
+                    "\na) 'ums-users/api-credentials.json' file has been provided for Cloudbreak Mock testing. Please remove this." +
+                    "\nb) requested account is not present at 'ums-users/api-credentials.json' file for Real UMS testing. Please revise your account ID.");
+        } else {
+            LOGGER.info("Getting the requested real UMS admin by account Id: {}", accountId);
+            try {
+                CloudbreakUser adminUser = usersByAccount.values().stream().flatMap(Collection::stream)
+                        .filter(CloudbreakUser::getAdmin).findFirst()
+                        .orElseThrow(() -> new TestFailException(String.format("There is no real UMS admin in account: %s", accountId)));
+                LOGGER.info(" Real UMS account admin has been found:: \nDisplay name: {} \nCrn: {} \nAccess key: {} \nSecret key: {} \nAdmin: {} ",
+                        adminUser.getDisplayName(), adminUser.getCrn(), adminUser.getAccessKey(), adminUser.getSecretKey(), adminUser.getAdmin());
+                return adminUser;
+            } catch (Exception e) {
+                throw new TestFailException(String.format("Cannot get the real UMS admin in account: %s, because of: %s", accountId, e.getMessage()), e);
+            }
         }
     }
 
     public boolean isInitialized() {
         return MapUtils.isNotEmpty(usersByAccount);
+    }
+
+    public void setUseUmsStore(@Optional("false") boolean useUmsStore) {
+        this.useUmsStore = useUmsStore;
+    }
+
+    public boolean getUseUmsStore() {
+        return useUmsStore;
     }
 }

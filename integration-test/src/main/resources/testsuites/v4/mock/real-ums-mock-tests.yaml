@@ -1,4 +1,6 @@
 name: "real-ums-mock-tests"
+parameters:
+  useUmsStore: true
 tests:
   - name: "real_ums_mock_tests"
     classes:
