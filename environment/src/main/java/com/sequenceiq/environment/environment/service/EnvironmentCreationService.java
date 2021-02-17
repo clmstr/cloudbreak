@@ -151,6 +151,8 @@ public class EnvironmentCreationService {
         validationBuilder.merge(validatorService.validatePublicKey(creationDto.getAuthentication().getPublicKey()));
         ValidationResult parentChildValidation = validatorService.validateParentChildRelation(environment, creationDto.getParentEnvironmentName());
         validationBuilder.merge(parentChildValidation);
+        ValidationResult storageValidation = validatorService.validateStorageLocation(creationDto.getTelemetry().getLogging().getStorageLocation());
+        validationBuilder.merge(storageValidation);
         validationBuilder.ifError(() -> isCloudPlatformInvalid(creationDto.getCreator(), creationDto.getCloudPlatform()),
                 "Provisioning in " + creationDto.getCloudPlatform() + " is not enabled for this account.");
         ValidationResult freeIpaCreationValidation = validatorService.validateFreeIpaCreation(creationDto.getFreeIpaCreation());
