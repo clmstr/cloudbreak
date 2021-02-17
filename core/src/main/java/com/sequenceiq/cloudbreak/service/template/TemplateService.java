@@ -3,6 +3,7 @@ package com.sequenceiq.cloudbreak.service.template;
 import static com.sequenceiq.cloudbreak.common.exception.NotFoundException.notFound;
 import static com.sequenceiq.cloudbreak.util.SqlUtil.getProperSqlErrorMessage;
 
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -13,10 +14,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.ResourceStatus;
+import com.sequenceiq.cloudbreak.common.exception.BadRequestException;
 import com.sequenceiq.cloudbreak.common.type.APIResourceType;
 import com.sequenceiq.cloudbreak.domain.Template;
 import com.sequenceiq.cloudbreak.domain.Topology;
-import com.sequenceiq.cloudbreak.common.exception.BadRequestException;
 import com.sequenceiq.cloudbreak.repository.TemplateRepository;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
 import com.sequenceiq.cloudbreak.util.NameUtil;
@@ -38,6 +39,10 @@ public class TemplateService {
 
     public Template get(Long id) {
         return templateRepository.findById(id).orElseThrow(notFound("Template", id));
+    }
+
+    public Optional<Template> findById(Long id) {
+        return templateRepository.findById(id);
     }
 
     public Template create(User user, Template template) {

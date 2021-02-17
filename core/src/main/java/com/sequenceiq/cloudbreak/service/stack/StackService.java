@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
@@ -66,6 +67,7 @@ import com.sequenceiq.cloudbreak.core.CloudbreakImageNotFoundException;
 import com.sequenceiq.cloudbreak.core.bootstrap.service.container.ContainerOrchestratorResolver;
 import com.sequenceiq.cloudbreak.domain.Network;
 import com.sequenceiq.cloudbreak.domain.Orchestrator;
+import com.sequenceiq.cloudbreak.domain.StackAuthentication;
 import com.sequenceiq.cloudbreak.domain.projection.AutoscaleStack;
 import com.sequenceiq.cloudbreak.domain.projection.StackClusterStatusView;
 import com.sequenceiq.cloudbreak.domain.projection.StackCrnView;
@@ -482,6 +484,10 @@ public class StackService implements ResourceIdProvider, ResourceNameProvider {
     public Set<String> getResourceCrnsByNameListInTenant(List<String> names, String tenantName) {
         return stackViewService.findResourceCrnsByNameListAndTenant(names, tenantName);
     }
+
+    public StackAuthentication findStackAuthenticationByStackId(Long stackId) {
+        return stackRepository.findStackAuthenticationByStackId(stackId);
+    };
 
     public Set<String> getResourceCrnsByTenant(String tenantName) {
         return stackViewService.findResourceCrnsByTenant(tenantName);

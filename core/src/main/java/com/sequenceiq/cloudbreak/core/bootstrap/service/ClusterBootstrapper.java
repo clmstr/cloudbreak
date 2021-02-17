@@ -40,6 +40,7 @@ import com.sequenceiq.cloudbreak.core.bootstrap.service.host.HostClusterAvailabi
 import com.sequenceiq.cloudbreak.core.bootstrap.service.host.context.HostBootstrapApiContext;
 import com.sequenceiq.cloudbreak.core.bootstrap.service.host.context.HostOrchestratorClusterContext;
 import com.sequenceiq.cloudbreak.domain.Orchestrator;
+import com.sequenceiq.cloudbreak.domain.Template;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.ClusterComponent;
@@ -59,6 +60,7 @@ import com.sequenceiq.cloudbreak.service.GatewayConfigService;
 import com.sequenceiq.cloudbreak.service.orchestrator.OrchestratorService;
 import com.sequenceiq.cloudbreak.service.stack.InstanceMetaDataService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -115,6 +117,9 @@ public class ClusterBootstrapper {
 
     @Inject
     private InstanceMetaDataService instanceMetaDataService;
+
+    @Inject
+    private TemplateService templateService;
 
     public void bootstrapMachines(Long stackId) throws CloudbreakException {
         Stack stack = stackService.getByIdWithListsInTransaction(stackId);
@@ -274,7 +279,8 @@ public class ClusterBootstrapper {
             } else {
                 String generatedHostName = clusterNodeNameGenerator.getNodeNameForInstanceMetadata(im, stack, hostGroupNodeIndexes, clusterNodeNames);
                 String instanceId = im.getInstanceId();
-                String instanceType = im.getInstanceGroup().getTemplate().getInstanceType();
+                Template template = templateService.get(im.getInstanceGroup().getTemplate().getId());
+                String instanceType = template.getInstanceType();
                 nodes.add(new Node(im.getPrivateIp(), im.getPublicIpWrapper(), instanceId, instanceType, generatedHostName, domain, im.getInstanceGroupName()));
                 initializeDiscoveryFqdnOfInstanceMetadata(im, domain, generatedHostName);
             }

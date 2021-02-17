@@ -4,15 +4,19 @@ import static com.sequenceiq.cloudbreak.validation.ValidationResult.State.ERROR;
 import static com.sequenceiq.cloudbreak.validation.ValidationResult.State.VALID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.when;
 
+import java.util.Optional;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.powermock.reflect.Whitebox;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
@@ -25,9 +29,11 @@ import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.dto.credential.Credential;
 import com.sequenceiq.cloudbreak.ldap.LdapConfigService;
+import com.sequenceiq.cloudbreak.repository.TemplateRepository;
 import com.sequenceiq.cloudbreak.service.blueprint.BlueprintService;
 import com.sequenceiq.cloudbreak.service.environment.EnvironmentClientService;
 import com.sequenceiq.cloudbreak.service.rdsconfig.RdsConfigService;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 import com.sequenceiq.cloudbreak.structuredevent.CloudbreakRestRequestThreadLocalService;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 
@@ -58,6 +64,9 @@ public class StackValidatorTest extends StackRequestValidatorTestBase {
     private final InstanceTemplateValidator templateValidator = new InstanceTemplateValidator();
 
     @Mock
+    private TemplateService templateService;
+
+    @Mock
     private BlueprintService blueprintService;
 
     @Mock
@@ -86,6 +95,11 @@ public class StackValidatorTest extends StackRequestValidatorTestBase {
 
     public StackValidatorTest() {
         super(LoggerFactory.getLogger(StackValidatorTest.class));
+    }
+
+    @Before
+    public void init() {
+        Whitebox.setInternalState(templateValidator, templateService);
     }
 
     @Test
@@ -127,9 +141,11 @@ public class StackValidatorTest extends StackRequestValidatorTestBase {
 
     private Stack stackWithRootVolumeSize(Integer rootVolumeSize) {
         Template templateRequest = new Template();
+        templateRequest.setId(1L);
         templateRequest.setRootVolumeSize(rootVolumeSize);
         InstanceGroup instanceGroup = getInstanceGroup(templateRequest);
         Cluster clusterRequest = getCluster();
+        when(templateService.findById(templateRequest.getId())).thenReturn(Optional.of(templateRequest));
         return getStack(Sets.newHashSet(instanceGroup), clusterRequest);
     }
 

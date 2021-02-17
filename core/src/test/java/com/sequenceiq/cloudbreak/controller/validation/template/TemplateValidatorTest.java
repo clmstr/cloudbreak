@@ -39,6 +39,7 @@ import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.dto.credential.Credential;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 import com.sequenceiq.cloudbreak.workspace.model.User;
 import com.sequenceiq.common.api.type.CdpResourceType;
@@ -56,6 +57,9 @@ public class TemplateValidatorTest {
     private CloudVmTypes cloudVmTypes;
 
     private PlatformDisks platformDisks;
+
+    @Mock
+    private TemplateService templateService;
 
     @Mock
     private ValidationResult.ValidationResultBuilder builder;
@@ -192,6 +196,8 @@ public class TemplateValidatorTest {
         int volumeSize = dataVolumeSize;
         VolumeTemplate volumeTemplate = TestUtil.volumeTemplate(volumeCount, volumeSize, "standard");
         awsTemplate.setVolumeTemplates(Sets.newHashSet(volumeTemplate));
+
+        when(templateService.get(1L)).thenReturn(awsTemplate);
 
         if (createIDBroker) {
             instanceGroup = TestUtil.instanceGroup(1L, InstanceGroupType.CORE, awsTemplate);

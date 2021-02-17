@@ -31,6 +31,7 @@ import com.sequenceiq.cloudbreak.domain.VolumeTemplate;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.dto.credential.Credential;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 import com.sequenceiq.cloudbreak.workspace.model.User;
 import com.sequenceiq.common.api.type.CdpResourceType;
@@ -48,6 +49,9 @@ public class TemplateValidator {
     @Inject
     private CredentialToExtendedCloudCredentialConverter extendedCloudCredentialConverter;
 
+    @Inject
+    private TemplateService templateService;
+
     private final Supplier<Map<Platform, Map<String, VolumeParameterType>>> diskMappings =
             Suppliers.memoize(() -> cloudParameterService.getDiskTypes().getDiskMappings());
 
@@ -56,7 +60,7 @@ public class TemplateValidator {
 
     public void validate(Credential credential, InstanceGroup instanceGroup, Stack stack,
         CdpResourceType stackType, Optional<User> user, ValidationResult.ValidationResultBuilder validationBuilder) {
-        Template value = instanceGroup.getTemplate();
+        Template value = templateService.get(instanceGroup.getTemplate().getId());
         CloudVmTypes cloudVmTypes = cloudParameterService.getVmTypesV2(
                 extendedCloudCredentialConverter.convert(credential, user),
                 stack.getRegion(),

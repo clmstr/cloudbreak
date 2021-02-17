@@ -20,14 +20,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import java.util.stream.Collectors;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,14 +70,16 @@ import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.TargetGroup;
 import com.sequenceiq.cloudbreak.service.ComponentConfigProviderService;
+import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.environment.EnvironmentClientService;
 import com.sequenceiq.cloudbreak.service.image.ImageService;
-import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
+import com.sequenceiq.cloudbreak.service.securitygroup.SecurityGroupService;
 import com.sequenceiq.cloudbreak.service.securityrule.SecurityRuleService;
 import com.sequenceiq.cloudbreak.service.stack.DefaultRootVolumeSizeProvider;
 import com.sequenceiq.cloudbreak.service.stack.InstanceGroupService;
 import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
 import com.sequenceiq.cloudbreak.service.stack.TargetGroupPersistenceService;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 import com.sequenceiq.cloudbreak.template.filesystem.FileSystemConfigurationsViewProvider;
 import com.sequenceiq.common.api.type.EncryptionType;
 import com.sequenceiq.common.api.type.LoadBalancerType;
@@ -182,6 +184,12 @@ public class StackToCloudStackConverterTest {
     @Mock
     private LoadBalancerConfigService loadBalancerConfigService;
 
+    @Mock
+    private TemplateService templateService;
+
+    @Mock
+    private SecurityGroupService securityGroupService;
+
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
@@ -254,6 +262,7 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
+        when(templateService.get(any())).thenReturn(template);
 
         CloudStack result = underTest.convert(stack);
 
@@ -281,6 +290,7 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(notDeletedMetas);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
+        when(templateService.get(any())).thenReturn(template);
 
         CloudStack result = underTest.convert(stack);
 
@@ -306,6 +316,7 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(notDeletedMetas);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
+        when(templateService.get(any())).thenReturn(template);
 
         CloudStack result = underTest.convert(stack);
 
@@ -328,6 +339,8 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup.getGroupName()).thenReturn(groupName);
         when(instanceGroup.getTemplate()).thenReturn(template);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
+        when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(String.format("There is no skeleton and instance available for Group -> name:%s", groupName));
@@ -350,6 +363,7 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
+        when(templateService.get(any())).thenReturn(template);
 
         CloudStack result = underTest.convert(stack);
 
@@ -369,6 +383,7 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
+        when(templateService.get(any())).thenReturn(template);
 
         CloudStack result = underTest.convert(stack);
 
@@ -384,6 +399,7 @@ public class StackToCloudStackConverterTest {
         instanceGroups.add(instanceGroup);
         Template template = new Template();
         template.setVolumeTemplates(Sets.newHashSet());
+        when(templateService.get(any())).thenReturn(template);
         Map<String, Object> expected = createMap("");
         when(instanceGroup.getTemplate()).thenReturn(template);
         when(instanceGroup.getAttributes()).thenReturn(attributes);
@@ -407,6 +423,7 @@ public class StackToCloudStackConverterTest {
         String platform = "platform";
         int expected = Integer.MAX_VALUE;
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
         when(template.getRootVolumeSize()).thenReturn(null);
@@ -427,6 +444,7 @@ public class StackToCloudStackConverterTest {
         Template template = mock(Template.class);
         int expected = Integer.MAX_VALUE;
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
         when(template.getRootVolumeSize()).thenReturn(expected);
@@ -445,6 +463,7 @@ public class StackToCloudStackConverterTest {
         instanceGroups.add(instanceGroup);
         Template template = mock(Template.class);
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(instanceGroup.getSecurityGroup()).thenReturn(null);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
@@ -465,11 +484,13 @@ public class StackToCloudStackConverterTest {
         SecurityGroup securityGroup = new SecurityGroup();
         securityGroup.setId(1L);
         securityGroup.setSecurityGroupIds(Collections.singleton(TEST_STRING_ID));
+        securityGroup.setSecurityRules(Collections.emptySet());
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getSecurityGroup()).thenReturn(securityGroup);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
-        when(securityRuleService.findAllBySecurityGroupId(securityGroup.getId())).thenReturn(Collections.emptyList());
+        when(securityGroupService.get(any())).thenReturn(securityGroup);
 
         CloudStack result = underTest.convert(stack);
 
@@ -480,7 +501,7 @@ public class StackToCloudStackConverterTest {
 
     @Test
     public void testConvertWhenSecurityGroupIsNotNullAndSecurityRuleRepositoryCanFindRulesButThereIsNoPortDefinitionThenEmptyPortDefinitionShouldBeStored() {
-        List<SecurityRule> securityRules = new ArrayList<>(1);
+        Set<SecurityRule> securityRules = new HashSet<>(1);
         SecurityRule securityRule = mock(SecurityRule.class);
         securityRules.add(securityRule);
         when(securityRule.getPorts()).thenReturn(EMPTY_STRING);
@@ -490,12 +511,14 @@ public class StackToCloudStackConverterTest {
         Template template = mock(Template.class);
         SecurityGroup securityGroup = new SecurityGroup();
         securityGroup.setId(1L);
+        securityGroup.setSecurityRules(securityRules);
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup.getSecurityGroup()).thenReturn(securityGroup);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
-        when(securityRuleService.findAllBySecurityGroupId(securityGroup.getId())).thenReturn(securityRules);
+        when(securityGroupService.get(any())).thenReturn(securityGroup);
 
         CloudStack result = underTest.convert(stack);
 
@@ -506,7 +529,7 @@ public class StackToCloudStackConverterTest {
 
     @Test
     public void testConvertWhenThereArePortDefinitionsInSecurityRulesAndSegmentsLengthIsGreaterThanOneThenExpectedPartsShouldBeStored() {
-        List<SecurityRule> securityRules = new ArrayList<>(1);
+        Set<SecurityRule> securityRules = new HashSet<>(1);
         SecurityRule securityRule = mock(SecurityRule.class);
         securityRules.add(securityRule);
         String[] ports = new String[1];
@@ -518,12 +541,14 @@ public class StackToCloudStackConverterTest {
         Template template = mock(Template.class);
         SecurityGroup securityGroup = new SecurityGroup();
         securityGroup.setId(1L);
+        securityGroup.setSecurityRules(securityRules);
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup.getSecurityGroup()).thenReturn(securityGroup);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
-        when(securityRuleService.findAllBySecurityGroupId(securityGroup.getId())).thenReturn(securityRules);
+        when(securityGroupService.get(any())).thenReturn(securityGroup);
 
         CloudStack result = underTest.convert(stack);
 
@@ -536,7 +561,7 @@ public class StackToCloudStackConverterTest {
 
     @Test
     public void testConvertWhenThereArePortDefinitionsInSecurityRulesButSegmentsLengthIsOneThanOneThenExpectedPartsShouldBeStored() {
-        List<SecurityRule> securityRules = new ArrayList<>(1);
+        Set<SecurityRule> securityRules = new HashSet<>(1);
         SecurityRule securityRule = mock(SecurityRule.class);
         securityRules.add(securityRule);
         String[] ports = new String[1];
@@ -548,12 +573,14 @@ public class StackToCloudStackConverterTest {
         Template template = mock(Template.class);
         SecurityGroup securityGroup = new SecurityGroup();
         securityGroup.setId(1L);
+        securityGroup.setSecurityRules(securityRules);
         when(instanceGroup.getTemplate()).thenReturn(template);
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup.getSecurityGroup()).thenReturn(securityGroup);
         when(instanceGroup.getStack()).thenReturn(stack);
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
-        when(securityRuleService.findAllBySecurityGroupId(securityGroup.getId())).thenReturn(securityRules);
+        when(securityGroupService.get(any())).thenReturn(securityGroup);
 
         CloudStack result = underTest.convert(stack);
 
@@ -917,10 +944,11 @@ public class StackToCloudStackConverterTest {
         Template template = new Template();
         template.setVolumeTemplates(Sets.newHashSet());
         template.setAttributes(new Json(Map.of("someAttr", "value")));
+        when(templateService.get(any())).thenReturn(template);
         template.setSecretAttributes(new Json(Map.of("otherAttr", "value")).getValue());
 
         InstanceTemplate instanceTemplate = underTest.buildInstanceTemplate(
-                template, "name", 0L, InstanceStatus.CREATE_REQUESTED, "instanceImageId");
+                template.getId(), "name", 0L, InstanceStatus.CREATE_REQUESTED, "instanceImageId");
 
         assertNotNull(instanceTemplate.getParameters());
         assertEquals("value", instanceTemplate.getParameters().get("someAttr"));
@@ -933,9 +961,10 @@ public class StackToCloudStackConverterTest {
         template.setVolumeTemplates(Sets.newHashSet());
         template.setAttributes(new Json(Map.of("keyEncryptionMethod", "RAW", InstanceTemplate.VOLUME_ENCRYPTION_KEY_TYPE, EncryptionType.CUSTOM.name())));
         template.setSecretAttributes(new Json(Map.of(InstanceTemplate.VOLUME_ENCRYPTION_KEY_ID, "myKey")).getValue());
+        when(templateService.get(any())).thenReturn(template);
 
         InstanceTemplate instanceTemplate = underTest.buildInstanceTemplate(
-                template, "name", 0L, InstanceStatus.CREATE_REQUESTED, "instanceImageId");
+                template.getId(), "name", 0L, InstanceStatus.CREATE_REQUESTED, "instanceImageId");
 
         Map<String, Object> parameters = instanceTemplate.getParameters();
         assertNotNull(parameters);
@@ -972,6 +1001,7 @@ public class StackToCloudStackConverterTest {
         when(instanceGroupService.findByTargetGroupId(anyLong())).thenReturn(Set.of(instanceGroup1, instanceGroup2));
         TargetGroupPortPair targetGroupPortPair = new TargetGroupPortPair(443, 8443);
         when(loadBalancerConfigService.getTargetGroupPortPairs(any(TargetGroup.class))).thenReturn(Set.of(targetGroupPortPair));
+        when(templateService.get(any())).thenReturn(template);
 
         CloudStack result = underTest.convert(stack);
 
@@ -1000,6 +1030,7 @@ public class StackToCloudStackConverterTest {
         when(stack.getInstanceGroupsAsList()).thenReturn(new ArrayList<>(instanceGroups));
         Template template = new Template();
         template.setVolumeTemplates(Set.of());
+        when(templateService.get(any())).thenReturn(template);
         when(instanceGroup1.getTemplate()).thenReturn(template);
         when(instanceGroup1.getNotDeletedInstanceMetaDataSet()).thenReturn(Set.of());
         when(instanceGroup1.getStack()).thenReturn(stack);

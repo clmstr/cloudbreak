@@ -28,6 +28,7 @@ import com.sequenceiq.cloudbreak.cloud.model.VolumeSetAttributes.Volume;
 import com.sequenceiq.cloudbreak.cluster.util.ResourceAttributeUtil;
 import com.sequenceiq.cloudbreak.converter.spi.CredentialToCloudCredentialConverter;
 import com.sequenceiq.cloudbreak.domain.Resource;
+import com.sequenceiq.cloudbreak.domain.Template;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
@@ -39,6 +40,7 @@ import com.sequenceiq.cloudbreak.orchestrator.model.NodeVolumes;
 import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.environment.credential.CredentialClientService;
 import com.sequenceiq.cloudbreak.service.stack.InstanceMetaDataService;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 
 @Service
 public class StackUtil {
@@ -58,6 +60,9 @@ public class StackUtil {
     @Inject
     private LoadBalancerConfigService loadBalancerConfigService;
 
+    @Inject
+    private TemplateService templateService;
+
     public Set<Node> collectNodes(Stack stack) {
         Set<Node> agents = new HashSet<>();
         for (InstanceGroup instanceGroup : stack.getInstanceGroups()) {
@@ -65,7 +70,7 @@ public class StackUtil {
                 for (InstanceMetaData im : instanceGroup.getNotDeletedInstanceMetaDataSet()) {
                     if (im.getDiscoveryFQDN() != null) {
                         String instanceId = im.getInstanceId();
-                        String instanceType = instanceGroup.getTemplate().getInstanceType();
+                        String instanceType = templateService.get(instanceGroup.getTemplate().getId()).getInstanceType();
                         agents.add(new Node(im.getPrivateIp(), im.getPublicIp(), instanceId, instanceType,
                                 im.getDiscoveryFQDN(), im.getInstanceGroupName()));
                     }
@@ -83,7 +88,8 @@ public class StackUtil {
                 .filter(im -> im.getDiscoveryFQDN() != null)
                 .map(im -> {
                     String instanceId = im.getInstanceId();
-                    String instanceType = im.getInstanceGroup().getTemplate().getInstanceType();
+                    Template template = templateService.get(im.getInstanceGroup().getTemplate().getId());
+                    String instanceType = template.getInstanceType();
                     return new Node(im.getPrivateIp(), im.getPublicIp(), instanceId, instanceType,
                             im.getDiscoveryFQDN(), im.getInstanceGroupName());
                 })
@@ -120,7 +126,7 @@ public class StackUtil {
                 for (InstanceMetaData im : instanceGroup.getNotDeletedInstanceMetaDataSet()) {
                     if (im.getDiscoveryFQDN() != null && (newNodeAddresses.isEmpty() || newNodeAddresses.contains(im.getPrivateIp()))) {
                         String instanceId = im.getInstanceId();
-                        String instanceType = instanceGroup.getTemplate().getInstanceType();
+                        String instanceType = templateService.get(instanceGroup.getTemplate().getId()).getInstanceType();
                         String dataVolumes = getOrDefault(instanceToVolumeInfoMap, instanceId, "dataVolumes", "");
                         String serialIds = getOrDefault(instanceToVolumeInfoMap, instanceId, "serialIds", "");
                         String fstab = getOrDefault(instanceToVolumeInfoMap, instanceId, "fstab", "");

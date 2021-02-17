@@ -22,6 +22,9 @@ import com.sequenceiq.cloudbreak.domain.StackAuthentication;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
+import com.sequenceiq.cloudbreak.domain.view.StackView;
+import com.sequenceiq.cloudbreak.service.stack.StackService;
+import com.sequenceiq.cloudbreak.service.stack.StackViewService;
 import com.sequenceiq.common.api.type.InstanceGroupType;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -37,12 +40,23 @@ public class InstanceMetaDataToCloudInstanceConverterTest extends AbstractEntity
     @Mock
     private InstanceMetadataToImageIdConverter instanceMetadataToImageIdConverter;
 
+    @Mock
+    private StackViewService stackViewService;
+
+    @Mock
+    private StackService stackService;
+
     @InjectMocks
     private InstanceMetaDataToCloudInstanceConverter underTest;
 
     @Test
     public void testConvert() {
         InstanceMetaData source = getSource();
+        StackView stackView = new StackView();
+        stackView.setCloudPlatform("AWS");
+        stackView.setId(1L);
+        when(stackViewService.getById(1L)).thenReturn(stackView);
+        when(stackService.findStackAuthenticationByStackId(1L)).thenReturn(new StackAuthentication());
         Map<String, Object> params = new HashMap<>();
         params.put(CloudInstance.SUBNET_ID, SUBNET_ID);
         params.put(CloudInstance.INSTANCE_NAME, INSTANCE_NAME);
@@ -51,7 +65,6 @@ public class InstanceMetaDataToCloudInstanceConverterTest extends AbstractEntity
 
         assertEquals(2, cloudInstance.getParameters().size());
         assertEquals(source.getInstanceId(), cloudInstance.getInstanceId());
-
     }
 
     @Override

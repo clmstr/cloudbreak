@@ -2,6 +2,8 @@ package com.sequenceiq.cloudbreak.service.cluster;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
@@ -9,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.InstanceMetadataType;
@@ -22,6 +23,7 @@ import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
 import com.sequenceiq.cloudbreak.service.stack.CloudParameterCache;
+import com.sequenceiq.cloudbreak.service.template.TemplateService;
 import com.sequenceiq.common.api.type.InstanceGroupType;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +35,9 @@ public class EmbeddedDatabaseServiceTest {
     @Mock
     private CloudParameterCache cloudParameterCache;
 
+    @Mock
+    private TemplateService templateService;
+
     @InjectMocks
     private EmbeddedDatabaseService underTest;
 
@@ -40,7 +45,7 @@ public class EmbeddedDatabaseServiceTest {
     public void testIsEmbeddedDatabaseOnAttachedDiskEnabled() {
         // GIVEN
         Stack stack = createStack(1);
-        Mockito.when(cloudParameterCache.isVolumeAttachmentSupported(CLOUDPLATFORM)).thenReturn(true);
+        when(cloudParameterCache.isVolumeAttachmentSupported(CLOUDPLATFORM)).thenReturn(true);
         // WHEN
         boolean actualResult = underTest.isEmbeddedDatabaseOnAttachedDiskEnabled(ACCOUNT_ID, stack, null);
         // THEN
@@ -51,7 +56,7 @@ public class EmbeddedDatabaseServiceTest {
     public void testIsEmbeddedDatabaseOnAttachedDiskEnabledWhenAttachedDiskEntitlementIsEnabledButNoDisksAttachedSupported() {
         // GIVEN
         Stack stack = createStack(0);
-        Mockito.when(cloudParameterCache.isVolumeAttachmentSupported(CLOUDPLATFORM)).thenReturn(false);
+        when(cloudParameterCache.isVolumeAttachmentSupported(CLOUDPLATFORM)).thenReturn(false);
         // WHEN
         boolean actualResult = underTest.isEmbeddedDatabaseOnAttachedDiskEnabled(ACCOUNT_ID, stack, null);
         // THEN
@@ -88,6 +93,8 @@ public class EmbeddedDatabaseServiceTest {
         Cluster cluster = new Cluster();
         cluster.setEmbeddedDatabaseOnAttachedDisk(true);
         stack.setCluster(cluster);
+        when(templateService.get(any())).thenReturn(stack.getInstanceGroups().stream()
+                .filter(ig -> ig.getInstanceGroupType() == InstanceGroupType.GATEWAY).findFirst().get().getTemplate());
         // WHEN
         boolean actualResult = underTest.isAttachedDiskForEmbeddedDatabaseCreated(stack);
         // THEN
@@ -98,6 +105,8 @@ public class EmbeddedDatabaseServiceTest {
     public void testIsAttachedDiskForEmbeddedDatabaseCreatedWhenNoVolumeAttached() {
         // GIVEN
         Stack stack = createStack(0);
+        when(templateService.get(any())).thenReturn(stack.getInstanceGroups().stream()
+                .filter(ig -> ig.getInstanceGroupType() == InstanceGroupType.GATEWAY).findFirst().get().getTemplate());
         Cluster cluster = new Cluster();
         cluster.setEmbeddedDatabaseOnAttachedDisk(true);
         stack.setCluster(cluster);

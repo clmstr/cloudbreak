@@ -18,6 +18,7 @@ import com.sequenceiq.authorization.service.model.projection.ResourceCrnAndNameV
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.StackType;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status;
 import com.sequenceiq.cloudbreak.domain.Network;
+import com.sequenceiq.cloudbreak.domain.StackAuthentication;
 import com.sequenceiq.cloudbreak.domain.projection.AutoscaleStack;
 import com.sequenceiq.cloudbreak.domain.projection.StackClusterStatusView;
 import com.sequenceiq.cloudbreak.domain.projection.StackCrnView;
@@ -265,6 +266,9 @@ public interface StackRepository extends WorkspaceResourceRepository<Stack, Long
             + "AND (:environmentCrn IS null OR s.environmentCrn = :environmentCrn) "
             + "AND (s.type IS null OR s.type in :stackTypes)")
     Set<StackListItem> findByWorkspaceId(@Param("id") Long id, @Param("environmentCrn") String environmentCrn, @Param("stackTypes") List<StackType> stackTypes);
+
+    @Query("SELECT s.stackAuthentication FROM Stack s WHERE s.id = :stackId")
+    StackAuthentication findStackAuthenticationByStackId(@Param("stackId") Long stackId);
 
     @Modifying
     @Query("UPDATE Stack s SET s.minaSshdServiceId = :minaSshdServiceId WHERE s.id = :id")
