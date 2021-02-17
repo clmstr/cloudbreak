@@ -73,6 +73,16 @@ public class MeasuredTestContext extends MockedTestContext {
     }
 
     @Override
+    public void setExpectException(boolean expectException) {
+        wrappedTestContext.setExpectException(expectException);
+    }
+
+    @Override
+    public boolean getExpectException() {
+        return wrappedTestContext.getExpectException();
+    }
+
+    @Override
     public ApplicationContext getApplicationContext() {
         return wrappedTestContext.getApplicationContext();
     }

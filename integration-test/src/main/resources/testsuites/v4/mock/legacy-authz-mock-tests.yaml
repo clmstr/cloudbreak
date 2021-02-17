@@ -1,6 +1,4 @@
 name: "legacy-authz-mock-tests"
-parameters:
-  useUmsStore: true
 tests:
   - name: "legacy_authz_mock_tests"
     classes:

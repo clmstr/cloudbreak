@@ -1,6 +1,4 @@
 name: "mock-authz-testcases"
-parameters:
-  useUmsStore: true
 tests:
   - name: "authz mock testcases"
     classes:

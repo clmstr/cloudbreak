@@ -85,6 +85,8 @@ public abstract class TestContext implements ApplicationContextAware {
 
     private boolean shutdown;
 
+    private boolean expectException;
+
     private final Map<String, String> statuses = new HashMap<>();
 
     private final Map<String, Object> selections = new HashMap<>();
@@ -163,6 +165,14 @@ public abstract class TestContext implements ApplicationContextAware {
         this.shutdown = shutdown;
     }
 
+    public void setExpectException(boolean expectException) {
+        this.expectException = expectException;
+    }
+
+    public boolean getExpectException() {
+        return expectException;
+    }
+
     public ApplicationContext getApplicationContext() {
         return applicationContext;
     }
@@ -207,6 +217,7 @@ public abstract class TestContext implements ApplicationContextAware {
             Class<? extends MicroserviceClient> clientClass, Action<T, U> action, Class<E> expectedException, RunningParameter runningParameter) {
         checkShutdown();
         String key = runningParameter.getKey();
+        setExpectException(true);
         if (StringUtils.isBlank(key)) {
             key = action.getClass().getSimpleName();
         }

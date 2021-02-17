@@ -258,6 +258,7 @@ public abstract class AbstractIntegrationTest extends AbstractMinimalTest {
     }
 
     protected void useRealUmsUser(TestContext testContext, String key) {
+        cloudbreakActor.setUseUmsStore(true);
         testContext.as(cloudbreakActor.useRealUmsUser(key));
     }
 

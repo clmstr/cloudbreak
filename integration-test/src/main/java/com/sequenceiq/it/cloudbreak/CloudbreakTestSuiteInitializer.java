@@ -32,7 +32,6 @@ import com.sequenceiq.cloudbreak.client.CloudbreakServiceUserCrnClient;
 import com.sequenceiq.cloudbreak.client.CloudbreakUserCrnClientBuilder;
 import com.sequenceiq.it.IntegrationTestContext;
 import com.sequenceiq.it.SuiteContext;
-import com.sequenceiq.it.cloudbreak.actor.CloudbreakActor;
 import com.sequenceiq.it.cloudbreak.cloud.v4.CommonClusterManagerProperties;
 import com.sequenceiq.it.cloudbreak.context.CloudbreakITContextConstants;
 import com.sequenceiq.it.cloudbreak.util.CleanupService;
@@ -44,7 +43,7 @@ public class CloudbreakTestSuiteInitializer extends AbstractTestNGSpringContextT
 
     private static final int WITH_TYPE_LENGTH = 4;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CloudbreakTestSuiteInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CloudbreakTestSuiteInitializer.class);
 
     @Value("${integrationtest.cloudbreak.server}")
     private String defaultCloudbreakServer;
@@ -84,9 +83,6 @@ public class CloudbreakTestSuiteInitializer extends AbstractTestNGSpringContextT
 
     @Inject
     private CleanupService cleanUpService;
-
-    @Inject
-    private CloudbreakActor cloudbreakActor;
 
     private IntegrationTestContext itContext;
 
@@ -222,16 +218,5 @@ public class CloudbreakTestSuiteInitializer extends AbstractTestNGSpringContextT
     private boolean isCleanUpNeeded(boolean cleanUp) {
         boolean noTestsFailed = CollectionUtils.isEmpty(itContext.getContextParam(CloudbreakITContextConstants.FAILED_TESTS, List.class));
         return cleanUp && (cleanUpOnFailure || noTestsFailed);
-    }
-
-    @BeforeSuite(alwaysRun = true)
-    @Parameters("useUmsStore")
-    public void umsStore(@Optional("false") boolean useUmsStore) {
-        if (useUmsStore) {
-            LOGGER.info("Real UMS user store is going to be used instead of Cloudbreak test project's default user.");
-            cloudbreakActor.setUseUmsStore(true);
-        } else {
-            LOGGER.info("Cloudbreak test project's default user is going to be used.");
-        }
     }
 }
