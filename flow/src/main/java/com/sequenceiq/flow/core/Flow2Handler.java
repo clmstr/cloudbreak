@@ -45,6 +45,8 @@ public class Flow2Handler implements Consumer<Event<? extends Payload>> {
 
     public static final String FLOW_CHAIN_ID = FlowConstants.FLOW_CHAIN_ID;
 
+    public static final String FLOW_CHAIN_TYPE = FlowConstants.FLOW_CHAIN_TYPE;
+
     public static final String FLOW_FINAL = FlowConstants.FLOW_FINAL;
 
     public static final String FLOW_CANCEL = FlowConstants.FLOW_CANCEL;
@@ -93,37 +95,37 @@ public class Flow2Handler implements Consumer<Event<? extends Payload>> {
         Payload payload = event.getData();
         String flowId = getFlowId(event);
         String flowChainId = getFlowChainId(event);
+        String flowChainType = getFlowChainType(event);
         String flowTriggerUserCrn = getFlowTriggerUserCrn(event);
         Span activeSpan = tracer.activeSpan();
         SpanContext spanContext = event.getHeaders().get(FlowConstants.SPAN_CONTEXT);
         String operationName = event.getKey().toString();
         if (FlowTracingUtil.isActiveSpanReusable(activeSpan, spanContext, operationName)) {
             LOGGER.debug("Reusing existing span. {}", activeSpan.context());
-            doAccept(event, key, payload, flowId, flowChainId, flowTriggerUserCrn, spanContext);
+            doAccept(event, key, payload, flowId, flowChainId, flowChainType, new FlowParameters(flowId, flowTriggerUserCrn, spanContext));
         } else {
             Span span = FlowTracingUtil.getSpan(tracer, operationName, spanContext, flowId, flowChainId, flowTriggerUserCrn);
             spanContext = FlowTracingUtil.useOrCreateSpanContext(spanContext, span);
             try (Scope ignored = tracer.activateSpan(span)) {
-                doAccept(event, key, payload, flowId, flowChainId, flowTriggerUserCrn, spanContext);
+                doAccept(event, key, payload, flowId, flowChainId, flowChainType, new FlowParameters(flowId, flowTriggerUserCrn, spanContext));
             } finally {
                 span.finish();
             }
         }
     }
 
-    private void doAccept(Event<? extends Payload> event, String key, Payload payload, String flowId, String flowChainId,
-            String flowTriggerUserCrn, SpanContext spanContext) {
-        FlowParameters flowParameters = new FlowParameters(flowId, flowTriggerUserCrn, spanContext);
+    private void doAccept(Event<? extends Payload> event, String key, Payload payload, String flowId, String flowChainId, String flowChainType,
+            FlowParameters flowParameters) {
         Map<Object, Object> contextParams = getContextParams(event);
         try {
-            handle(key, payload, flowParameters, flowChainId, contextParams);
+            handle(key, payload, flowParameters, flowChainId, flowChainType, contextParams);
         } catch (Exception e) {
             LOGGER.error("Failed update last flow log status and save new flow log entry.", e);
             runningFlows.remove(flowId);
         }
     }
 
-    private void handle(String key, Payload payload, FlowParameters flowParameters, String flowChainId, Map<Object, Object> contextParams)
+    private void handle(String key, Payload payload, FlowParameters flowParameters, String flowChainId, String flowChainType, Map<Object, Object> contextParams)
             throws TransactionExecutionException {
         switch (key) {
             case FLOW_CANCEL:
@@ -150,7 +152,7 @@ public class Flow2Handler implements Consumer<Event<? extends Payload>> {
                             acceptResult = FlowAcceptResult.runningInFlow(flowId);
                         }
                         flowParameters.setFlowId(flowId);
-                        Flow flow = flowConfig.createFlow(flowId, flowChainId, payload.getResourceId());
+                        Flow flow = flowConfig.createFlow(flowId, flowChainId, payload.getResourceId(), flowChainType);
                         flow.initialize(contextParams);
                         runningFlows.put(flow, flowChainId);
                         try {
@@ -294,7 +296,7 @@ public class Flow2Handler implements Consumer<Event<? extends Payload>> {
                         .filter(fc -> fc.getClass().equals(flowLog.getFlowType())).findFirst();
                 try {
                     Payload payload = (Payload) JsonReader.jsonToJava(flowLog.getPayload());
-                    Flow flow = flowConfig.get().createFlow(flowLog.getFlowId(), flowLog.getFlowChainId(), payload.getResourceId());
+                    Flow flow = flowConfig.get().createFlow(flowLog.getFlowId(), flowLog.getFlowChainId(), payload.getResourceId(), "TODO");
                     runningFlows.put(flow, flowLog.getFlowChainId());
                     if (flowLog.getFlowChainId() != null) {
                         flowChainHandler.restoreFlowChain(flowLog.getFlowChainId());
@@ -326,6 +328,10 @@ public class Flow2Handler implements Consumer<Event<? extends Payload>> {
 
     private String getFlowChainId(Event<?> event) {
         return event.getHeaders().get(FLOW_CHAIN_ID);
+    }
+
+    private String getFlowChainType(Event<?> event) {
+        return event.getHeaders().get(FLOW_CHAIN_TYPE);
     }
 
     private String getFlowTriggerUserCrn(Event<?> event) {
