@@ -106,9 +106,6 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
 
     @Test
     public void testGetKnoxGatewayWhenNoGateway() {
-        InstanceGroup instanceGroup = new InstanceGroup();
-        instanceGroup.setGroupName("gateway");
-        instanceGroup.setInstanceGroupType(InstanceGroupType.CORE);
         Cluster cluster = new Cluster();
         cluster.setBlueprint(blueprint);
         Stack stack = new Stack();

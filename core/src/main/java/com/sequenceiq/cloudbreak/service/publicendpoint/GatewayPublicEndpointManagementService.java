@@ -117,7 +117,6 @@ public class GatewayPublicEndpointManagementService extends BasePublicEndpointMa
                 .getHostGroupsWithComponent(HueRoles.HUE_SERVER);
     }
 
-
     public boolean updateDnsEntryForLoadBalancers(Stack stack) {
         boolean success = false;
         if (manageCertificateAndDnsInPem() && stack != null) {

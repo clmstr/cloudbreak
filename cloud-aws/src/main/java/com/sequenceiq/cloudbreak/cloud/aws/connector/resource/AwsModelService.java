@@ -1,10 +1,8 @@
 package com.sequenceiq.cloudbreak.cloud.aws.connector.resource;
 
-import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.PrefixList;
 import com.sequenceiq.cloudbreak.cloud.aws.AwsClient;
 import com.sequenceiq.cloudbreak.cloud.aws.AwsNetworkCfTemplateProvider;
-import com.sequenceiq.cloudbreak.cloud.aws.CloudFormationTemplateBuilder;
 import com.sequenceiq.cloudbreak.cloud.aws.CloudFormationTemplateBuilder.ModelContext;
 import com.sequenceiq.cloudbreak.cloud.aws.client.AmazonEc2Client;
 import com.sequenceiq.cloudbreak.cloud.aws.efs.AwsEfsFileSystem;

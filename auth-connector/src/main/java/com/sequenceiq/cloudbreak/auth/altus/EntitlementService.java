@@ -182,13 +182,11 @@ public class EntitlementService {
     }
 
     public boolean datalakeLoadBalancerEnabled(String accountId) {
-//        return isEntitlementRegistered(accountId, CDP_DATA_LAKE_LOAD_BALANCER);
-        return true;
+        return isEntitlementRegistered(accountId, CDP_DATA_LAKE_LOAD_BALANCER);
     }
 
     public boolean publicEndpointAccessGatewayEnabled(String accountId) {
-//        return isEntitlementRegistered(accountId, CDP_PUBLIC_ENDPOINT_ACCESS_GATEWAY);
-        return true;
+        return isEntitlementRegistered(accountId, CDP_PUBLIC_ENDPOINT_ACCESS_GATEWAY);
     }
 
     public boolean isExperienceDeletionEnabled(String accountId) {

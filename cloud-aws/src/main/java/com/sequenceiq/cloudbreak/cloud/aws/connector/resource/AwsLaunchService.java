@@ -21,8 +21,6 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
 import com.amazonaws.services.cloudformation.model.ListStackResourcesResult;
 import com.amazonaws.services.cloudformation.model.ResourceStatus;
-import com.amazonaws.services.cloudformation.model.StackResourceSummary;
-import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
 import com.amazonaws.services.ec2.model.ImportKeyPairRequest;
 import com.amazonaws.services.ec2.model.PrefixList;
