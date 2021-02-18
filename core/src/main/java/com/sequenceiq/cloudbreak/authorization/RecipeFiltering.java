@@ -47,7 +47,7 @@ public class RecipeFiltering extends AbstractAuthorizationFiltering<Set<RecipeVi
         return recipeService.findAllViewByWorkspaceId(getWorkspaceId(args));
     }
 
-    private Long getWorkspaceId(Map<String, Object> params) {
-        return (Long) params.get(WORKSPACE_ID);
+    private Long getWorkspaceId(Map<String, Object> args) {
+        return (Long) args.get(WORKSPACE_ID);
     }
 }

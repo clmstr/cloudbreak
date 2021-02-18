@@ -71,15 +71,15 @@ public class DatalakeFiltering extends AbstractAuthorizationFiltering<List<SdxCl
         }
     }
 
-    public String getEnvName(Map<String, Object> params) {
-        return (String) params.get(ENV_NAME);
+    public String getEnvName(Map<String, Object> args) {
+        return (String) args.get(ENV_NAME);
     }
 
-    public String getEnvCrn(Map<String, Object> params) {
-        return (String) params.get(ENV_CRN);
+    public String getEnvCrn(Map<String, Object> args) {
+        return (String) args.get(ENV_CRN);
     }
 
-    public boolean hasParam(String paramName, Map<String, Object> params) {
-        return params.containsKey(paramName);
+    public boolean hasParam(String paramName, Map<String, Object> args) {
+        return args.containsKey(paramName);
     }
 }

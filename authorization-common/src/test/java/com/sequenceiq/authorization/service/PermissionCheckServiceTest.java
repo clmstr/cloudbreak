@@ -31,9 +31,9 @@ import com.sequenceiq.authorization.annotation.DisableCheckPermissions;
 import com.sequenceiq.authorization.annotation.FilterListBasedOnPermissions;
 import com.sequenceiq.authorization.annotation.InternalOnly;
 import com.sequenceiq.authorization.annotation.ResourceCrn;
-import com.sequenceiq.authorization.resource.AuthorizationFiltering;
 import com.sequenceiq.authorization.resource.AuthorizationResource;
 import com.sequenceiq.authorization.resource.AuthorizationResourceAction;
+import com.sequenceiq.authorization.service.list.AbstractAuthorizationFiltering;
 import com.sequenceiq.cloudbreak.auth.ReflectionUtil;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.security.CrnUserDetailsService;
@@ -280,7 +280,7 @@ public class PermissionCheckServiceTest {
         }
     }
 
-    static class ExampleFiltering implements AuthorizationFiltering<String> {
+    static class ExampleFiltering extends AbstractAuthorizationFiltering<String> {
 
         @Override
         public List<AuthorizationResource> getAllResources(Map<String, Object> args) {
