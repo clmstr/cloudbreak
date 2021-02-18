@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
 import com.cloudera.thunderhead.service.common.usage.UsageProto;
+import com.sequenceiq.cloudbreak.common.mappable.CloudPlatform;
 import com.sequenceiq.cloudbreak.structuredevent.event.FlowDetails;
 import com.sequenceiq.cloudbreak.structuredevent.event.cdp.CDPOperationDetails;
 import com.sequenceiq.cloudbreak.structuredevent.event.cdp.environment.CDPEnvironmentStructuredFlowEvent;
 import com.sequenceiq.cloudbreak.structuredevent.service.telemetry.mapper.EnvironmentRequestProcessingStepMapper;
+import com.sequenceiq.environment.environment.dto.EnvironmentDto;
 
 class CDPStructuredFlowEventToCDPOperationDetailsConverterTest {
 
@@ -38,6 +40,11 @@ class CDPStructuredFlowEventToCDPOperationDetailsConverterTest {
         Assert.assertEquals("", details.getResourceName());
         Assert.assertEquals("", details.getInitiatorCrn());
         Assert.assertEquals("", details.getCorrelationId());
+        Assert.assertEquals(UsageProto.CDPRequestProcessingStep.Value.UNSET, details.getCdpRequestProcessingStep());
+        Assert.assertEquals("", details.getFlowId());
+        Assert.assertEquals("", details.getFlowChainId());
+        Assert.assertEquals("", details.getFlowState());
+        Assert.assertEquals(UsageProto.CDPEnvironmentsEnvironmentType.Value.UNSET, details.getEnvironmentType());
 
         Assert.assertEquals("version-1234", details.getApplicationVersion());
     }
@@ -118,4 +125,15 @@ class CDPStructuredFlowEventToCDPOperationDetailsConverterTest {
         Assert.assertEquals("flowId", details.getFlowChainId());
         Assert.assertEquals("SOMETHING", details.getFlowState());
     }
+
+    @Test
+    public void testEnvironmentTypeSetCorrectly() {
+        CDPEnvironmentStructuredFlowEvent cdpStructuredFlowEvent = new CDPEnvironmentStructuredFlowEvent();
+        EnvironmentDto environmentDetails = new EnvironmentDto();
+        environmentDetails.setCloudPlatform(CloudPlatform.AWS.name());
+        cdpStructuredFlowEvent.setPayload(environmentDetails);
+
+        UsageProto.CDPOperationDetails details = underTest.convert(cdpStructuredFlowEvent);
+
+        Assert.assertEquals(UsageProto.CDPEnvironmentsEnvironmentType.Value.AWS, details.getEnvironmentType());    }
 }
