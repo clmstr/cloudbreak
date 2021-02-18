@@ -254,7 +254,6 @@ You can support authorization on new resources, and you can specify the rights a
 4. implement `ResourceBasedCrnProvider`'s methods to support different scenarios on API level,
     - `ResourceBasedCrnProvider.getResourceCrnByResourceName(String)` - if you want to support resoure names,
     - `ResourceBasedCrnProvider.getResourceCrnListByResourceNameList(Collection<String>)` - if you want to support list of resoure names,
-    - `ResourceBasedCrnProvider.getResourceCrnsInAccount()` - if you want to support `@FilterListBasedOnPermissions`,
     - `ResourceBasedCrnProvider.getEnvironmentCrnByResourceCrn(String)` - if you want to support environment level authorization as well (has right on resource or on resource's environment),
     - `ResourceBasedCrnProvider.getEnvironmentCrnsByResourceCrns(Collection<String>)` - if you want to support environment level authorization when the request contains a list of crn-s, names,
 5. if certain resoures should be handled as default resources (for example default image catalog), and the authorization shouldn't call UMS at all, implement `DefaultResourceChecker` interface.
