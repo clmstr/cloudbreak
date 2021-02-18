@@ -19,7 +19,7 @@ __Table of content__
         - [CheckPermissionByResourceNameList](#checkpermissionbyresourcenamelist)
         - [CheckPermissionByRequestProperty](#checkpermissionbyrequestproperty)
     + [List filtering](#list-filtering)
-        - [Notes on performance:](#notes-on-performance-)
+        - [Notes on performance](#notes-on-performance)
     + [Example](#example)
 * [Introduction of new resources](#introduction-of-new-resources)
 * [How does it work internally](#how-does-it-work-internally)
